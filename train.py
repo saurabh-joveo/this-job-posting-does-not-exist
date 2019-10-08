@@ -3,6 +3,7 @@
 #  PYTHONPATH=src ./train --dataset <file|directory|glob>
 
 import argparse
+import logging
 import json
 import os
 import numpy as np
@@ -174,16 +175,16 @@ def main():
                 os.path.join('models', args.model_name))
         else:
             ckpt = tf.train.latest_checkpoint(args.restore_from)
-        print('Loading checkpoint', ckpt)
+        logging.info('Loading checkpoint' + str(ckpt))
         saver.restore(sess, ckpt)
 
-        print('Loading dataset...')
+        logging.info('Loading dataset...')
         chunks = load_dataset(enc, args.dataset, args.combine)
         data_sampler = Sampler(chunks)
         if args.val_every > 0:
             val_chunks = load_dataset(enc, args.val_dataset, args.combine) if args.val_dataset else chunks
-        print('dataset has', data_sampler.total_size, 'tokens')
-        print('Training...')
+        logging.info('dataset has' + str(data_sampler.total_size) + 'tokens')
+        logging.info('Training...')
 
         if args.val_every > 0:
             # Sample from validation set once with fixed seed to make
@@ -202,8 +203,8 @@ def main():
 
         def save():
             maketree(os.path.join(CHECKPOINT_DIR, args.run_name))
-            print(
-                'Saving',
+            logging.info(
+                'Saving'+
                 os.path.join(CHECKPOINT_DIR, args.run_name,
                              'model-{}').format(counter))
             saver.save(
@@ -214,7 +215,7 @@ def main():
                 fp.write(str(counter) + '\n')
 
         def generate_samples():
-            print('Generating samples...')
+            logging.info('Generating samples...')
             context_tokens = data_sampler.sample(1)
             all_text = []
             index = 0
@@ -228,7 +229,7 @@ def main():
                         index + 1, text)
                     all_text.append(text)
                     index += 1
-            print(text)
+            logging.info(text)
             maketree(os.path.join(SAMPLE_DIR, args.run_name))
             with open(
                     os.path.join(SAMPLE_DIR, args.run_name,
@@ -236,7 +237,7 @@ def main():
                 fp.write('\n'.join(all_text))
 
         def validation():
-            print('Calculating validation loss...')
+            logging.info('Calculating validation loss...')
             losses = []
             for batch in tqdm.tqdm(val_batches):
                 losses.append(sess.run(val_loss, feed_dict={val_context: batch}))
@@ -244,7 +245,7 @@ def main():
             v_summary = sess.run(val_loss_summary, feed_dict={val_loss: v_val_loss})
             summary_log.add_summary(v_summary, counter)
             summary_log.flush()
-            print(
+            logging.info(
                 '[{counter} | {time:2.2f}] validation loss = {loss:2.2f}'
                     .format(
                     counter=counter,
@@ -282,7 +283,7 @@ def main():
                 avg_loss = (avg_loss[0] * 0.99 + v_loss,
                             avg_loss[1] * 0.99 + 1.0)
 
-                print(
+                logging.info(
                     '[{counter} | {time:2.2f}] loss={loss:2.2f} avg={avg:2.2f}'
                         .format(
                         counter=counter,
@@ -292,9 +293,10 @@ def main():
 
                 counter += 1
         except KeyboardInterrupt:
-            print('interrupted')
+            logging.info('interrupted')
             save()
 
 
 if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s %(message)s')
     main()
