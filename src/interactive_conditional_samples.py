@@ -8,7 +8,7 @@ import tensorflow as tf
 
 import model, sample, encoder
 
-from train import CHECKPOINT_DIR
+CHECKPOINT_DIR = 'checkpoint'
 
 
 def interact_model(
