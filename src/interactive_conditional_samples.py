@@ -8,6 +8,8 @@ import tensorflow as tf
 
 import model, sample, encoder
 
+from train import CHECKPOINT_DIR
+
 
 def interact_model(
         model_name='117M',
@@ -65,7 +67,13 @@ def interact_model(
         )
 
         saver = tf.train.Saver()
-        ckpt = tf.train.latest_checkpoint(os.path.join('models', model_name))
+
+        ckpt = tf.train.latest_checkpoint(os.path.join(CHECKPOINT_DIR, 'run1'))
+        if ckpt is None:
+            # Get fresh GPT weights if new run.
+            ckpt = tf.train.latest_checkpoint(os.path.join('models', model_name))
+
+        # ckpt = tf.train.latest_checkpoint(os.path.join('models', model_name))
         saver.restore(sess, ckpt)
 
         while True:
